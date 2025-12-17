@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Dark Web: Mobile Optimized</title>
+
+  <script src="https://unpkg.com/gsap@3/dist/gsap.min.js"></script>
+  <script src="https://unpkg.com/gsap@3/dist/ScrollTrigger.min.js"></script>
+  <script src="https://unpkg.com/gsap@3/dist/TextPlugin.min.js"></script>
+
+  <style>
+    :root {
+      --bg-color: #020202;
+      --accent: #00ff9d; /* Matrix Green */
+      --secondary: #bd00ff; /* Cyber Purple */
+      --warning: #ffbd2e;
+      --text-main: #e0e0e0;
+      --border: rgba(255, 255, 255, 0.1);
+      
+      --layer1: #00ff9d;
+      --layer2: #bd00ff;
+      --layer3: #ffffff;
+
+      --font-mono: 'Courier New', Courier, monospace;
+      --font-sans: system-ui, -apple-system, sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-color);
+      color: var(--text-main);
+      overflow-x: hidden;
+      line-height: 1.6;
+      padding-bottom: 20vh;
+    }
+
+    #bg-canvas {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; opacity: 0.3;
+    }
+
+    h1, h2, h3 { font-weight: 800; letter-spacing: -0.02em; text-transform: uppercase; }
+    h1 { font-size: clamp(3rem, 9vw, 7rem); line-height: 1; font-family: var(--font-mono); }
+    h2 { font-size: clamp(2rem, 5vw, 4rem); margin-bottom: 2rem; color: #fff; border-left: 5px solid var(--accent); padding-left: 20px; }
+    p { font-size: 1.1rem; max-width: 700px; color: #bbb; margin-bottom: 1.5rem; }
+    
+    section {
+      position: relative;
+      min-height: 100vh;
+      padding: 6rem 5vw;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* HERO */
+    .hero { align-items: center; text-align: center; height: 100vh; }
+    .sub-hero { font-family: var(--font-mono); color: var(--secondary); margin-top: 1rem; }
+
+    /* HORIZONTAL SCROLL */
+    .horizontal-wrapper {
+      width: 100%; height: 100vh; overflow: hidden; display: flex;
+    }
+    .horizontal-inner { display: flex; flex-wrap: nowrap; height: 100%; }
+    .layer-panel {
+      width: 100vw; height: 100vh; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: radial-gradient(circle at center, #111 0%, #000 100%);
+      position: relative;
+    }
+    .layer-info {
+      z-index: 2; text-align: center; background: rgba(0,0,0,0.8);
+      padding: 3rem; border: 1px solid var(--border); border-radius: 20px;
+      backdrop-filter: blur(10px); max-width: 600px;
+    }
+    .watermark {
+      position: absolute; font-size: 15vw; font-weight: 900; color: rgba(255,255,255,0.03); z-index: 1;
+    }
+
+    /* ROUTING (ONION) - Desktop Default */
+    .circuit-section { background: #080808; z-index: 10; }
+    .circuit-container {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      width: 100%; max-width: 1100px; margin: 4rem auto; position: relative; height: 400px;
+    }
+    .circuit-line { position: absolute; top: 60px; left: 0; width: 100%; height: 4px; background: #222; z-index: 1; }
+    .circuit-node { position: relative; z-index: 2; width: 120px; display: flex; flex-direction: column; align-items: center; }
+    .node-icon {
+      width: 60px; height: 60px; background: #111; border: 2px solid #444; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 1.5rem; color: #fff;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5); margin-bottom: 1rem; transition: all 0.3s;
+    }
+    .node-label { font-family: var(--font-mono); font-size: 0.9rem; color: #888; margin-bottom: 0.5rem; }
+    .node-hud {
+      background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 10px; border-radius: 8px; width: 180px; font-size: 0.75rem;
+      color: #aaa; opacity: 0; transform: translateY(10px); transition: all 0.5s;
+    }
+    .node-hud strong { color: #fff; display: block; margin-bottom: 4px; }
+    .hud-danger { color: #ff5f56; }
+    .hud-safe { color: var(--accent); }
+    .onion-packet {
+      width: 40px; height: 40px; background: #fff;
+      position: absolute; top: 40px; left: 0; z-index: 10; border-radius: 8px;
+      box-shadow: 0 0 0 4px var(--layer3), 0 0 0 8px var(--layer2), 0 0 0 12px var(--layer1);
+    }
+
+    /* TIMELINE */
+    .timeline-section { align-items: center; }
+    .timeline-container { position: relative; width: 100%; max-width: 800px; margin: 0 auto; }
+    .timeline-line { position: absolute; left: 20px; top: 0; width: 4px; height: 100%; background: #333; }
+    .timeline-progress { position: absolute; left: 20px; top: 0; width: 4px; height: 0%; background: var(--secondary); box-shadow: 0 0 15px var(--secondary); }
+    .timeline-item { margin-left: 60px; margin-bottom: 4rem; opacity: 0; transform: translateX(50px); }
+    .timeline-date { color: var(--secondary); font-weight: bold; font-family: var(--font-mono); }
+
+    /* FLIP CARDS */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; width: 100%; }
+    .flip-card { background-color: transparent; width: 100%; height: 320px; perspective: 1000px; }
+    .flip-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.8s; transform-style: preserve-3d; }
+    .flip-front, .flip-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem; border-radius: 12px; border: 1px solid var(--border); }
+    .flip-front { background: rgba(255,255,255,0.03); }
+    .flip-back { background: #1a1a1a; transform: rotateY(180deg); border-color: var(--secondary); }
+    .myth-label { color: var(--warning); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 1rem; }
+
+    /* TERMINAL */
+    .hosting-section { align-items: center; background: linear-gradient(180deg, var(--bg-color) 0%, #0d0d0d 50%, var(--bg-color) 100%); }
+    .terminal-window { width: 100%; max-width: 800px; background: #0c0c0c; border: 1px solid #333; border-radius: 10px; font-family: var(--font-mono); box-shadow: 0 0 40px rgba(0, 255, 157, 0.1); overflow: hidden; position: relative; }
+    .terminal-header { background: #1f1f1f; padding: 12px; display: flex; gap: 8px; border-bottom: 1px solid #333; }
+    .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .red { background: #ff5f56; } .yellow { background: #ffbd2e; } .green { background: #27c93f; }
+    .terminal-body { padding: 2rem; min-height: 400px; font-size: 1rem; color: #ccc; display: flex; flex-direction: column; gap: 10px; }
+    .cmd-line { display: flex; opacity: 0; transform: translateX(-10px); }
+    .prompt { color: var(--accent); margin-right: 10px; flex-shrink: 0; }
+    .command { color: #fff; font-weight: bold; }
+    .output { color: #888; display: block; margin-bottom: 1rem; opacity: 0; }
+    .highlight { color: var(--secondary); }
+    .cursor { display: inline-block; width: 10px; height: 1.2em; background: var(--accent); animation: blink 1s infinite; vertical-align: middle; margin-left: 5px; }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    footer { text-align: center; padding: 4rem; opacity: 0.5; font-size: 0.8rem; }
+
+    /* ========================================= */
+    /* MOBILE RESPONSIVE STYLES */
+    /* ========================================= */
+    @media (max-width: 768px) {
+      /* General */
+      h1 { font-size: 14vw; }
+      h2 { font-size: 2rem; border-left-width: 3px; }
+      section { padding: 4rem 1.5rem; }
+      p { font-size: 1rem; }
+
+      /* Horizontal Section */
+      .layer-info { padding: 1.5rem; width: 90%; }
+      .layer-info h3 { font-size: 1.4rem; }
+      .watermark { font-size: 25vw; top: 15%; }
+
+      /* Circuit Section - Flip to Vertical */
+      .circuit-container {
+        flex-direction: column;
+        align-items: center;
+        height: 900px; /* Taller to fit vertical nodes */
+        margin: 2rem auto;
+      }
+      .circuit-line {
+        width: 4px;
+        height: 100%;
+        top: 0;
+        left: 30px; /* Align line under icons */
+        background: #222;
+      }
+      .circuit-node {
+        width: 100%;
+        flex-direction: row; /* Icon left, text right */
+        justify-content: flex-start;
+        align-items: flex-start;
+        padding-left: 0;
+        margin-bottom: 0; /* Spacing handled by flex justify */
+      }
+      .node-icon {
+        margin-right: 20px;
+        flex-shrink: 0;
+        z-index: 5;
+        background: #000; /* Cover the line */
+      }
+      .node-label { display: none; } /* Hide label to save space, HUD is enough */
+      
+      .node-hud {
+        width: auto;
+        flex-grow: 1;
+        transform: none;
+        opacity: 0.3; /* Dim initially */
+        margin-top: 5px;
+      }
+
+      .onion-packet {
+        top: 20px;
+        left: 10px; /* Align with line */
+        width: 40px; height: 40px;
+      }
+
+      /* Timeline */
+      .timeline-container { margin-left: 0; }
+      .timeline-line, .timeline-progress { left: 10px; }
+      .timeline-item { margin-left: 35px; margin-bottom: 3rem; }
+      .timeline-item h3 { font-size: 1.2rem; }
+
+      /* Cards */
+      .cards-grid { grid-template-columns: 1fr; }
+      .flip-card { height: 280px; }
+
+      /* Terminal */
+      .terminal-body { padding: 1rem; font-size: 0.8rem; overflow-x: scroll; }
+      .terminal-window { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <section class="hero">
+    <h1 id="main-title">THE DARK WEB</h1>
+    <p class="sub-hero">DECRYPTING THE HIDDEN INTERNET</p>
+    <p style="margin-top: 2rem; font-size: 0.9rem; opacity: 0.7;">SCROLL TO INITIALIZE CONNECTION</p>
+  </section>
+
+  <div class="horizontal-wrapper">
+    <div class="horizontal-inner">
+      <div class="layer-panel"><span class="watermark">SURFACE</span><div class="layer-info"><h3>Layer 1: The Surface Web</h3><p>The visible tip. Sites indexed by Google/Bing. Represents only ~4% of data.</p></div></div>
+      <div class="layer-panel"><span class="watermark">DEEP</span><div class="layer-info"><h3>Layer 2: The Deep Web</h3><p>The submerged 90%. Medical records, banking portals. Anything behind a password.</p></div></div>
+      <div class="layer-panel"><span class="watermark" style="color: rgba(189, 0, 255, 0.05)">DARK</span><div class="layer-info" style="border-color: var(--secondary)"><h3 style="color: var(--secondary)">Layer 3: The Dark Web</h3><p>Anonymous. Hosted on Tor. Not indexed. Requires specific tools.</p></div></div>
+    </div>
+  </div>
+
+  <section class="circuit-section">
+    <div style="text-align: center; margin-bottom: 2rem;">
+      <h2 class="scramble-text">Tor Routing</h2>
+      <p>Data is wrapped in 3 layers of encryption.</p>
+    </div>
+    
+    <div class="circuit-container">
+      <div class="circuit-line"></div>
+      
+      <div class="circuit-node" id="c-user">
+        <div class="node-icon">💻</div>
+        <div class="node-hud"><strong>Origin Point</strong>IP: 192.168.1.5<br><span class="hud-safe">Status: Encrypted</span></div>
+      </div>
+      
+      <div class="circuit-node" id="c-entry">
+        <div class="node-icon" style="border-color: var(--layer1)">🛡️</div>
+        <div class="node-hud" id="hud-entry"><strong>Entry Node</strong>Knows: <span class="hud-danger">Your IP</span><br>Blind to: Dest.</div>
+      </div>
+      
+      <div class="circuit-node" id="c-middle">
+        <div class="node-icon" style="border-color: var(--layer2)">🔀</div>
+        <div class="node-hud" id="hud-middle"><strong>Middle Relay</strong>Knows: Entry<br>Blind to: You & Dest.</div>
+      </div>
+      
+      <div class="circuit-node" id="c-exit">
+        <div class="node-icon" style="border-color: var(--layer3)">🚪</div>
+        <div class="node-hud" id="hud-exit"><strong>Exit Node</strong>Knows: <span class="hud-danger">Dest.</span><br>Blind to: <span class="hud-safe">You</span></div>
+      </div>
+      
+      <div class="circuit-node" id="c-dest">
+        <div class="node-icon">🌐</div>
+        <div class="node-hud"><strong>Destination</strong>Received: Plain Request</div>
+      </div>
+
+      <div class="onion-packet"></div>
+    </div>
+  </section>
+
+  <section class="timeline-section">
+    <div style="margin-bottom: 2rem;">
+      <h2 class="scramble-text">Evolution</h2>
+    </div>
+    
+    <div class="timeline-container">
+      <div class="timeline-line"></div>
+      <div class="timeline-progress"></div>
+      
+      <div class="timeline-item" id="hist-1">
+        <div class="timeline-date">1990s</div>
+        <h3>US Naval Research Lab</h3>
+        <p>Tor was originally developed by military researchers to protect US intelligence communications.</p>
+      </div>
+      <div class="timeline-item" id="hist-2">
+        <div class="timeline-date">2002</div>
+        <h3>The Public Release</h3>
+        <p>The code is open-sourced. The logic: if everyone uses it, spies can hide in the noise.</p>
+      </div>
+      <div class="timeline-item" id="hist-3">
+        <div class="timeline-date">2011</div>
+        <h3>Silk Road Era</h3>
+        <p>The rise of the first modern darknet market using Bitcoin proved anonymous commerce was possible.</p>
+      </div>
+      <div class="timeline-item" id="hist-4">
+        <div class="timeline-date">TODAY</div>
+        <h3>Privacy vs. Crime</h3>
+        <p>Used by journalists, activists, and whistleblowers... but also for illicit trade and cybercrime.</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <section>
+    <h2 class="scramble-text">Myths vs Reality</h2>
+    <div class="cards-grid">
+      <div class="flip-card">
+        <div class="flip-inner">
+          <div class="flip-front"><span class="myth-label">Myth</span><h3>"Illegal to access"</h3><p>Tap/Hover to reveal</p></div>
+          <div class="flip-back"><span class="myth-label" style="color: var(--accent)">Fact</span><h3>Perfectly Legal</h3><p>Browsing .onion sites is legal in most countries. Only <strong>actions</strong> are crimes.</p></div>
+        </div>
+      </div>
+      <div class="flip-card">
+        <div class="flip-inner">
+          <div class="flip-front"><span class="myth-label">Myth</span><h3>"You are Invisible"</h3><p>Tap/Hover to reveal</p></div>
+          <div class="flip-back"><span class="myth-label" style="color: var(--accent)">Fact</span><h3>User Error Exists</h3><p>Logging into real accounts de-anonymizes you instantly.</p></div>
+        </div>
+      </div>
+      <div class="flip-card">
+        <div class="flip-inner">
+          <div class="flip-front"><span class="myth-label">Myth</span><h3>"It's all criminal"</h3><p>Tap/Hover to reveal</p></div>
+          <div class="flip-back"><span class="myth-label" style="color: var(--accent)">Fact</span><h3>Vital for Rights</h3><p>Crucial for citizens evading censorship in restrictive nations.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hosting-section">
+    <div style="margin-bottom: 2rem; text-align: center; z-index: 5;">
+      <h2>Hosting a Hidden Service</h2>
+      <p>Scroll down to configure...</p>
+    </div>
+    <div class="terminal-window">
+      <div class="terminal-header"><div class="dot red"></div><div class="dot yellow"></div><div class="dot green"></div><span style="margin-left: 10px; color: #666; font-size: 0.8rem;">root@darkserver:~</span></div>
+      <div class="terminal-body">
+        <div class="cmd-line group-1"><span class="prompt">root@server:~</span><span class="command">apt install nginx tor</span></div><div class="output group-1">Reading package lists... Done.</div>
+        <div class="cmd-line group-2"><span class="prompt">root@server:~</span><span class="command">nano /etc/tor/torrc</span></div><div class="output group-2" style="border: 1px dashed #444; padding: 10px; margin: 10px 0;"><span style="color: #6a9955"># Unleash the onion</span><br>HiddenServiceDir /var/lib/tor/<br>HiddenServicePort 80 127.0.0.1:80</div>
+        <div class="cmd-line group-3"><span class="prompt">root@server:~</span><span class="command">service tor restart</span></div><div class="output group-3">Restarting Tor service... [OK]</div>
+        <div class="cmd-line group-4"><span class="prompt">root@server:~</span><span class="command">cat /var/lib/tor/hostname</span></div><div class="output group-4"><span class="highlight" style="font-size: 1.1rem;">xy7z...q2p.onion</span><br><span style="font-size: 0.8rem">Service Active.</span></div>
+        <div class="cmd-line group-5"><span class="prompt">root@server:~</span><span class="cursor"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>GSAP ScrollTrigger Presentation v7.0 <br> EDUCATIONAL USE ONLY.</p>
+  </footer>
+
+  <script>
+    gsap.registerPlugin(ScrollTrigger, TextPlugin);
+
+    // 1. HERO TITLE
+    gsap.to("#main-title", { text: { value: "THE DARK WEB", delimiter: "" }, duration: 2, ease: "none" });
+
+    // 2. HORIZONTAL SCROLL
+    const layers = gsap.utils.toArray(".layer-panel");
+    gsap.to(layers, {
+      xPercent: -100 * (layers.length - 1), ease: "none",
+      scrollTrigger: { trigger: ".horizontal-wrapper", pin: true, scrub: 1, snap: 1 / (layers.length - 1), end: () => "+=" + document.querySelector(".horizontal-wrapper").offsetWidth }
+    });
+
+    // 3. CIRCUIT ANIMATION (RESPONSIVE)
+    ScrollTrigger.matchMedia({
+      
+      // DESKTOP ANIMATION (Horizontal)
+      "(min-width: 769px)": function() {
+        let circuitTl = gsap.timeline({
+          scrollTrigger: { trigger: ".circuit-section", start: "center center", end: "+=3500", pin: true, scrub: 1 }
+        });
+        
+        circuitTl.to(".onion-packet", { left: "25%", duration: 2, ease: "none" })
+          .to(".onion-packet", { boxShadow: "0 0 0 4px var(--layer3), 0 0 0 8px var(--layer2), 0 0 0 0px transparent", duration: 0.5 })
+          .to("#hud-entry", { opacity: 1, transform: "translateY(0)", duration: 0.5 }, "<").to("#c-entry .node-icon", { borderColor: "#fff", boxShadow: "0 0 25px var(--layer1)", duration: 0.2 }, "<")
+          
+          .to(".onion-packet", { left: "50%", duration: 2, ease: "none" })
+          .to(".onion-packet", { boxShadow: "0 0 0 4px var(--layer3), 0 0 0 0px transparent, 0 0 0 0px transparent", duration: 0.5 })
+          .to("#hud-middle", { opacity: 1, transform: "translateY(0)", duration: 0.5 }, "<").to("#c-middle .node-icon", { borderColor: "#fff", boxShadow: "0 0 25px var(--layer2)", duration: 0.2 }, "<")
+          
+          .to(".onion-packet", { left: "75%", duration: 2, ease: "none" })
+          .to(".onion-packet", { boxShadow: "0 0 0 0px transparent, 0 0 0 0px transparent, 0 0 0 0px transparent", backgroundColor: "#ff5f56", duration: 0.5 })
+          .to("#hud-exit", { opacity: 1, transform: "translateY(0)", duration: 0.5 }, "<").to("#c-exit .node-icon", { borderColor: "#ff5f56", boxShadow: "0 0 30px #ff5f56", duration: 0.2 }, "<")
+          
+          .to(".onion-packet", { left: "96%", duration: 2, ease: "none" });
+      },
+
+      // MOBILE ANIMATION (Vertical)
+      "(max-width: 768px)": function() {
+        let circuitTl = gsap.timeline({
+          scrollTrigger: { trigger: ".circuit-section", start: "top top", end: "+=2000", pin: true, scrub: 1 }
+        });
+
+        // Move Downwards (Top) instead of Left
+        circuitTl.to(".onion-packet", { top: "22%", duration: 2, ease: "none" }) // To Entry
+          .to(".onion-packet", { boxShadow: "0 0 0 4px var(--layer3), 0 0 0 8px var(--layer2), 0 0 0 0px transparent", duration: 0.5 })
+          .to("#hud-entry", { opacity: 1, duration: 0.5 }, "<").to("#c-entry .node-icon", { borderColor: "#fff", boxShadow: "0 0 25px var(--layer1)", duration: 0.2 }, "<")
+
+          .to(".onion-packet", { top: "45%", duration: 2, ease: "none" }) // To Middle
+          .to(".onion-packet", { boxShadow: "0 0 0 4px var(--layer3), 0 0 0 0px transparent, 0 0 0 0px transparent", duration: 0.5 })
+          .to("#hud-middle", { opacity: 1, duration: 0.5 }, "<").to("#c-middle .node-icon", { borderColor: "#fff", boxShadow: "0 0 25px var(--layer2)", duration: 0.2 }, "<")
+
+          .to(".onion-packet", { top: "68%", duration: 2, ease: "none" }) // To Exit
+          .to(".onion-packet", { boxShadow: "0 0 0 0px transparent, 0 0 0 0px transparent, 0 0 0 0px transparent", backgroundColor: "#ff5f56", duration: 0.5 })
+          .to("#hud-exit", { opacity: 1, duration: 0.5 }, "<").to("#c-exit .node-icon", { borderColor: "#ff5f56", boxShadow: "0 0 30px #ff5f56", duration: 0.2 }, "<")
+
+          .to(".onion-packet", { top: "92%", duration: 2, ease: "none" }); // To Dest
+      }
+    });
+
+    // 4. EVOLUTION (PINNED)
+    let historyTl = gsap.timeline({
+      scrollTrigger: { trigger: ".timeline-section", start: "center center", end: "+=3500", pin: true, scrub: 1 }
+    });
+    historyTl
+      .to(".timeline-progress", { height: "20%", duration: 1 }).to("#hist-1", { opacity: 1, x: 0, duration: 1 })
+      .to(".timeline-progress", { height: "50%", duration: 1 }).to("#hist-2", { opacity: 1, x: 0, duration: 1 })
+      .to(".timeline-progress", { height: "75%", duration: 1 }).to("#hist-3", { opacity: 1, x: 0, duration: 1 })
+      .to(".timeline-progress", { height: "100%", duration: 1 }).to("#hist-4", { opacity: 1, x: 0, duration: 1 });
+
+    // 5. TERMINAL
+    let termTl = gsap.timeline({
+      scrollTrigger: { trigger: ".hosting-section", start: "center center", end: "+=300%", pin: true, scrub: 0.5 }
+    });
+    termTl.to(".group-1", { opacity: 1, x: 0, duration: 1, stagger: 0.5 }).to(".group-2", { opacity: 1, x: 0, duration: 1, stagger: 0.5 })
+          .to(".group-3", { opacity: 1, x: 0, duration: 1, stagger: 0.5 }).to(".group-4", { opacity: 1, x: 0, duration: 1, stagger: 0.5 }).to(".group-5", { opacity: 1, x: 0, duration: 0.5 });
+
+    // 6. FLIP CARDS
+    const cards = document.querySelectorAll('.flip-card');
+    cards.forEach(card => {
+      // Mobile Tap Support
+      card.addEventListener('click', () => {
+        let inner = card.querySelector('.flip-inner');
+        let currentRot = gsap.getProperty(inner, "rotationY");
+        gsap.to(inner, { rotationY: currentRot === 180 ? 0 : 180 });
+      });
+      // Desktop Hover
+      card.addEventListener('mouseenter', () => gsap.to(card.querySelector('.flip-inner'), { rotationY: 180 }));
+      card.addEventListener('mouseleave', () => gsap.to(card.querySelector('.flip-inner'), { rotationY: 0 }));
+      
+      gsap.from(card, { y: 50, opacity: 0, duration: 1, scrollTrigger: { trigger: card, start: "top 90%" } });
+    });
+
+    // 7. MATRIX & TEXT
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let w, h; const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }; window.addEventListener('resize', resize); resize();
+    const cols = Math.floor(w / 20) + 1; const ypos = Array(cols).fill(0);
+    function matrix() { ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#0f0'; ctx.font = '15pt monospace'; ypos.forEach((y, i) => { const text = String.fromCharCode(Math.random() * 128); const x = i * 20; ctx.fillText(text, x, y); if (y > 100 + Math.random() * 10000) ypos[i] = 0; else ypos[i] = y + 20; }); }
+    setInterval(matrix, 50);
+    document.querySelectorAll(".scramble-text").forEach(el => { let originalText = el.innerText; el.addEventListener('mouseenter', () => { gsap.to(el, { duration: 1, scrambleText: { text: originalText, chars: "01010101", revealDelay: 0.5 } }); }); });
+  </script>
+</body>
+</html>
